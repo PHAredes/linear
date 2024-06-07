@@ -300,19 +300,37 @@ curryₗ = lamₗ (lamₗ (lamₗ (appₗ var2 (appₗ var1 var0))
 joinₜ : Term 0
 joinₜ = lamₜ (lamₜ (appₜ (appₜ var-one var-zero) (var-one)))
 
--- joinₜt→t : Term 0
--- joinₜt→t = {!   !} -- from-just (t→t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) (var-one)))))
--- {-
--- Level.Lift Agda.Primitive.lzero Agda.Builtin.Unit.⊤ !=< Term 0
--- when checking that the expression
--- from-just
--- (t→t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) var-one))))
--- has type Term 0
--- -}
+joinₜt→t : Term 0
+joinₜt→t = {!   !} -- from-just (t→t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) (var-one)))))
+{-
+Level.Lift Agda.Primitive.lzero Agda.Builtin.Unit.⊤ !=< Term 0
+when checking that the expression
+from-just
+(t→t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) var-one))))
+has type Term 0
+-}
 
 joinₗ : Linear 0
 joinₗ = lamₗ (lamₗ (appₗ (appₗ var1 var0) (var1)) 
   (∈!appₗ-l (∈!appₗ-r (∉varₗ (s≺s z≺s) z≠s) (∈!varₗ z≺s z=ᵣz)) (∉varₗ (s≺s z≺s) z≠s))) 
   (∈!lamₗ (∈!appₗ-l (∈!appₗ-l (∈!varₗ (s≺s z≺s) (s=ᵣs z=ᵣz)) (∉varₗ z≺s s≠z)) 
   (∉varₗ (s≺s z≺s) {!   !})))
-```  
+```
+
+## Normalisation (explicit substitution, CBV)
+
+```agda
+mutual 
+  data Lam : Set where
+    var : (k : Nat) → Lam
+    app : Lam  → Lam  → Lam
+    lam : Lam → Lam 
+    _〚_〛 : Lam → Sig → Lam -- instantiation
+
+  data Sig : Set where 
+    _/ : Lam → Sig -- cons
+    ⇑_ : Sig → Sig -- shift
+    ↑ : Sig -- lift
+
+
+```
