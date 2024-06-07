@@ -189,7 +189,7 @@ i ∈!? (lamₗ t x) = case-lam (suc i ∈!? t)
 ```
 
 Now, we have all the tools to map from closed `Terms` to Linear terms;
-Again, we are just recursively checking that the terms ASTs are linear, and aborting the mapping
+Again, we are just recursively checking that the terms ASTs are linear
 
 
 ```agda
