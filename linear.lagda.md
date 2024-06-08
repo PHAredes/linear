@@ -3,7 +3,7 @@ Some types we will need
 ```agda
 open import Data.Maybe
 open import Data.Fin using (Fin) renaming (fromℕ to fromNat; toℕ to toNat; zero to fzero; suc to fsuc)
-open import Data.Nat using (zero; suc; _+_; _*_; _∸_; _≤_) renaming (ℕ to Nat)
+open import Data.Nat using (zero; suc; _+_; _*_; _∸_) renaming (ℕ to Nat)
 
 data _≺_ : Nat → Nat → Set where
   z≺s : {n : Nat} → zero ≺ suc n
@@ -197,7 +197,7 @@ Again, we are just recursively checking that the terms ASTs are linear
 λ->λl {n} (varₜ x) = case-var ((toNat x) ≺? n)
   where case-var : Maybe (toNat x ≺ n) -> Maybe (Linear n)
         case-var nothing = nothing
-        case-var (just p) = just (varₗ (toNat x) p) 
+        case-var (just p) = just (varₗ (toNat x) p)
 λ->λl {n} (appₜ x y) = case-app (λ->λl {n} x) (λ->λl {n} y)
   where case-app : Maybe (Linear n) -> Maybe (Linear n) -> Maybe (Linear n)
         case-app nothing _ = nothing
@@ -317,20 +317,82 @@ joinₗ = lamₗ (lamₗ (appₗ (appₗ var1 var0) (var1))
   (∉varₗ (s≺s z≺s) {!   !})))
 ```
 
-## Normalisation (explicit substitution, CBV)
+## Normalisation (explicit substitution)
+
+Implementing normalisation for UALC directly will fall in a rabbit hole of using `Maybe` monads
+for proofs of linearity; we can instead implement normalisation for ULC and just use the previous map.
 
 ```agda
+
 mutual 
   data Lam : Set where
-    var : (k : Nat) → Lam
-    app : Lam  → Lam  → Lam
-    lam : Lam → Lam 
-    _〚_〛 : Lam → Sig → Lam -- instantiation
+    var : (n : Nat) → Lam
+    _∙_ : Lam → Lam → Lam
+    ƛ   : Lam → Lam
+    _〚_〛 : Lam → Sig → Lam -- instantiation of substitution
 
   data Sig : Set where 
     _/ : Lam → Sig -- cons
     ⇑_ : Sig → Sig -- shift
-    ↑ : Sig -- lift
+    ↑  : Sig       -- lift
 
+-- Term to Lam
+t→l : {n : Nat} -> Term n → Lam
+t→l (varₜ k) = (var (toNat k))
+t→l (appₜ t₁ t₂) = (t→l t₁) ∙ (t→l t₂)
+t→l (lamₜ t) = ƛ (t→l t)
 
+-- Lam to Term
+l→t : {n : Nat} -> Lam → Maybe (Term n)
+l→t {suc n} (var k) = just (varₜ (fromNat n))
+l→t {zero} (var k) = nothing -- there is no var with Term 0
+l→t (x ∙ y) with (l→t x) | (l→t y)
+... | (just x) | (just y) = just (appₜ x y)
+... | _ | _ = nothing
+l→t (ƛ x) with l→t x
+... | just x = just (lamₜ x)
+... | nothing = nothing
+l→t (_ 〚 _ 〛) = nothing
+-- we can use with to pattern match on intermediate steps or declare a intermediary function with where
+
+-- β reduction
+β-red : Lam -> Lam
+β-red (((ƛ x) ∙ y)) = x 〚 y / 〛
+β-red t = t
+
+contractυ : Lam -> Lam
+contractυ (ƛ t 〚 s 〛) = ƛ (t 〚 ⇑ s 〛)
+contractυ ((t₁ ∙ t₂)〚 s 〛) = (t₁ 〚 s 〛) ∙ (t₂ 〚 s 〛)
+contractυ (var zero 〚 t / 〛) = t
+contractυ (var (suc k) 〚 t / 〛) = var k
+contractυ (var zero 〚 ⇑ _ 〛) = var zero
+contractυ (var (suc k) 〚 ⇑ s 〛) = (var k 〚 s 〛) 〚 ↑ 〛
+contractυ (var x 〚 ↑ 〛) = var x
+contractυ t = t
+
+-- distribute substitutions
+contractυ* : Nat → Lam → Lam
+contractυ* (suc k) ((t 〚 s 〛)〚 s' 〛) = contractυ* k (contractυ* k (contractυ (t 〚 s 〛)) 〚 s' 〛)
+contractυ* (suc k) (t 〚 s 〛) = contractυ* k (contractυ (t 〚 s 〛))
+contractυ* 0 (t 〚 s 〛) = t 〚 s 〛
+contractυ* k (t₁ ∙ t₂) = (contractυ* k t₁) ∙ (contractυ* k t₂)
+contractυ* k (ƛ t) = ƛ (contractυ* k t)
+contractυ* _ (var k) = var k
+
+-- normalisation in Lam 
+normLam : Nat → Lam → Lam
+normLam (suc k) ((ƛ t₁) ∙ t₂) = normLam k (contractυ* (suc k) (t₁ 〚 t₂ / 〛))
+normLam k ((var i) ∙ t) = var i ∙ normLam k t
+normLam (suc k) (t₁ ∙ t₂) = normLam k ((normLam (suc k) t₁) ∙ normLam (suc k) t₂)
+normLam (suc k) (t 〚 s 〛) = normLam k (contractυ* (suc k) (t 〚 s 〛))
+normLam k (ƛ t) = ƛ (normLam k t)
+normLam k t = t
+
+-- normalisation in Linear
+normLinear : {n : Nat} → Nat → Linear n → Maybe (Linear n)
+normLinear {n} k t = case (l→t (normLam k (t→l (λl->λ t))))
+                         where case : Maybe (Term n) → Maybe (Linear n)
+                               case nothing = nothing
+                               case (just t) = λ->λl t
+    
 ```
