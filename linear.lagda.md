@@ -5,9 +5,9 @@ open import Data.Maybe
 open import Data.Fin using (Fin) renaming (fromℕ to fromNat; toℕ to toNat; zero to fzero; suc to fsuc)
 open import Data.Nat using (zero; suc; _+_; _*_; _∸_) renaming (ℕ to Nat)
 
-data _≺_ : Nat → Nat → Set where
-  z≺s : {n : Nat} → zero ≺ suc n
-  s≺s : {n m : Nat} → n ≺ m → suc n ≺ suc m
+data _≺_ : Nat -> Nat -> Set where
+  z≺s : {n : Nat} -> zero ≺ suc n
+  s≺s : {n m : Nat} -> n ≺ m -> suc n ≺ suc m
 
 data _=ᵣ_ : Nat -> Nat -> Set where -- recursive equality over Nat
   z=ᵣz : zero =ᵣ zero
@@ -18,7 +18,7 @@ data _≠_ : Nat -> Nat -> Set where
   s≠z : {n : Nat} -> suc n ≠ zero
   s≠s : {n m : Nat} -> n ≠ m -> suc n ≠ suc m
 
-_=ᵣ?_ : (n m : Nat) → Maybe (n =ᵣ m)
+_=ᵣ?_ : (n m : Nat) -> Maybe (n =ᵣ m)
 zero =ᵣ? zero = just z=ᵣz
 zero =ᵣ? (suc _) = nothing
 (suc _) =ᵣ? zero = nothing
@@ -31,7 +31,7 @@ zero =ᵣ? (suc _) = nothing
 Instead of representing variable names as straight natural numbers, we parameterise terms by the 
 number of available variables n, and then only allow available variables to be referenced inside 
 the term by using the type of finite sets to represent variable names. This way, we tame some of 
-the error-prone nature of de Bruijn indices by assigning different types to terms with differing 
+the error-prone nature of de Bruijn indices by asSigning different types to terms with differing 
 numbers of available variables. Closed terms are represented as values of type Term 0.
 I first encountered this trick in McBride (2003), but I know not from whence it originated.
 [Liamoc](http://liamoc.net/posts/2zero14-zero1-zero1-context-split/index.html)
@@ -170,20 +170,20 @@ i ∈!? (varₗ k p) = case-var (i =ᵣ? k)
         case-var nothing = nothing
         case-var (just p=ᵣ) = just (∈!varₗ p p=ᵣ)
 i ∈!? (appₗ x y) = choose (i ∉? x) -- or  (i ∉? y)
-  where case-app-x : {n i : Nat} → {x y : Linear n} → Maybe (i ∈! x) → Maybe ((i ∉ y) → i ∈! (appₗ x y))
+  where case-app-x : {n i : Nat} -> {x y : Linear n} -> Maybe (i ∈! x) -> Maybe ((i ∉ y) -> i ∈! (appₗ x y))
         case-app-x nothing = nothing
         case-app-x (just p) = just (∈!appₗ-l p)
                 
-        case-app-y : {n i : Nat} → {x y : Linear n} → Maybe (i ∈! y) → Maybe ((i ∉ x) → i ∈! (appₗ x y))
+        case-app-y : {n i : Nat} -> {x y : Linear n} -> Maybe (i ∈! y) -> Maybe ((i ∉ x) -> i ∈! (appₗ x y))
         case-app-y nothing =  nothing
-        case-app-y (just p)= just (λ z → ∈!appₗ-r z p)
+        case-app-y (just p)= just (λ z -> ∈!appₗ-r z p)
 
-        choose : Maybe (i ∉ x) → Maybe (i ∈! (appₗ x y))
+        choose : Maybe (i ∉ x) -> Maybe (i ∈! (appₗ x y))
         -- order of subterms is inverted, you need to swap if you choose y
         choose nothing =  ap (case-app-x (i ∈!? x)) (i ∉? y)
         choose (just _) = ap (case-app-y (i ∈!? y)) (i ∉? x)
 i ∈!? (lamₗ t x) = case-lam (suc i ∈!? t)
-  where case-lam : {n i : Nat} → {t : Linear (suc n)} → {p : zero ∈! t} → Maybe (suc i ∈! t) → Maybe (i ∈! (lamₗ t p))
+  where case-lam : {n i : Nat} -> {t : Linear (suc n)} -> {p : zero ∈! t} -> Maybe (suc i ∈! t) -> Maybe (i ∈! (lamₗ t p))
         case-lam nothing = nothing
         case-lam (just p) = just (∈!lamₗ p)
 ```
@@ -208,17 +208,17 @@ Again, we are just recursively checking that the terms ASTs are linear
   where case-lam : Maybe (Linear (suc n)) -> Maybe (Linear n)
         case-lam nothing = nothing
         case-lam (just u) = build-lamₗ (zero ∈!? u)
-          where build-lamₗ : Maybe (zero ∈! u) → Maybe (Linear n)
+          where build-lamₗ : Maybe (zero ∈! u) -> Maybe (Linear n)
                 build-lamₗ nothing = nothing
                 build-lamₗ (just p) = just (lamₗ u p)
 ```
 
-A function to prove consistency; the goal is to show that t→t is t → just t, if t is linear.
+A function to prove consistency; the goal is to show that t->t is t -> just t, if t is linear.
 
 ```agda
-t→t : Term 0 → Maybe (Term 0)
-t→t t = mb-λl->λl (λ->λl t)
-  where mb-λl->λl : {n : Nat} -> Maybe (Linear n) →  Maybe (Term n)
+t->t : Term 0 -> Maybe (Term 0)
+t->t t = mb-λl->λl (λ->λl t)
+  where mb-λl->λl : {n : Nat} -> Maybe (Linear n) ->  Maybe (Term n)
         mb-λl->λl nothing = nothing
         mb-λl->λl (just t) = just (λl->λ t)
 ```
@@ -227,7 +227,7 @@ So now may you ask why implementing two different calculus with a mapping from o
 Well, you can choose two paths with this:
 
 -- for non-linear terms, normalisation works just as in PLFA
--- for linear terms, you can use `Term n` and then apply `t→t` to ensure linearity;
+-- for linear terms, you can use `Term n` and then apply `t->t` to ensure linearity;
 
 This provides an useful framework for both ULC and UALC, keeping the expressiveness of both systems
 while only dealing with the issues of UALC syntax if strictly necessary
@@ -270,8 +270,8 @@ var2 = varₗ (suc (suc zero)) (s≺s (s≺s z≺s))
 flipₜ : Term 0
 flipₜ = lamₜ (lamₜ (lamₜ (appₜ (appₜ var-two var-zero) var-one)))
 
-flipₜt→t : Term 0
-flipₜt→t = from-just (t→t (lamₜ (lamₜ (lamₜ (appₜ (appₜ var-two var-zero) var-one)))))
+flipₜt->t : Term 0
+flipₜt->t = from-just (t->t (lamₜ (lamₜ (lamₜ (appₜ (appₜ var-two var-zero) var-one)))))
 -- returns unit type if not linear, thus doesn't typecheck
 
 -- Proofs of linearity are straightforward to built with auto solver
@@ -287,8 +287,8 @@ flipₗ = lamₗ (lamₗ (lamₗ (appₗ (appₗ var2 var0) var1) -- the term
 curryₜ : Term 0
 curryₜ = lamₜ (lamₜ (lamₜ (appₜ var-two (appₜ var-one var-zero))))
 
-curryₜt→t : Term 0
-curryₜt→t = from-just (t→t (lamₜ (lamₜ (lamₜ (appₜ var-two (appₜ var-one var-zero))))))
+curryₜt->t : Term 0
+curryₜt->t = from-just (t->t (lamₜ (lamₜ (lamₜ (appₜ var-two (appₜ var-one var-zero))))))
 
 curryₗ : Linear 0
 curryₗ = lamₗ (lamₗ (lamₗ (appₗ var2 (appₗ var1 var0)) 
@@ -300,21 +300,21 @@ curryₗ = lamₗ (lamₗ (lamₗ (appₗ var2 (appₗ var1 var0))
 joinₜ : Term 0
 joinₜ = lamₜ (lamₜ (appₜ (appₜ var-one var-zero) (var-one)))
 
-joinₜt→t : Term 0
-joinₜt→t = {!   !} -- from-just (t→t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) (var-one)))))
-{-
-Level.Lift Agda.Primitive.lzero Agda.Builtin.Unit.⊤ !=< Term 0
-when checking that the expression
-from-just
-(t→t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) var-one))))
-has type Term 0
--}
+-- joinₜt->t : Term 0
+-- joinₜt->t = {!   !} -- from-just (t->t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) (var-one)))))
+-- {-
+-- Level.Lift Agda.Primitive.lzero Agda.Builtin.Unit.⊤ !=< Term 0
+-- when checking that the expression
+-- from-just
+-- (t->t (lamₜ (lamₜ (appₜ (appₜ var-one var-zero) var-one))))
+-- has type Term 0
+-- -}
 
-joinₗ : Linear 0
-joinₗ = lamₗ (lamₗ (appₗ (appₗ var1 var0) (var1)) 
-  (∈!appₗ-l (∈!appₗ-r (∉varₗ (s≺s z≺s) z≠s) (∈!varₗ z≺s z=ᵣz)) (∉varₗ (s≺s z≺s) z≠s))) 
-  (∈!lamₗ (∈!appₗ-l (∈!appₗ-l (∈!varₗ (s≺s z≺s) (s=ᵣs z=ᵣz)) (∉varₗ z≺s s≠z)) 
-  (∉varₗ (s≺s z≺s) {!   !})))
+-- joinₗ : Linear 0
+-- joinₗ = lamₗ (lamₗ (appₗ (appₗ var1 var0) (var1)) 
+--   (∈!appₗ-l (∈!appₗ-r (∉varₗ (s≺s z≺s) z≠s) (∈!varₗ z≺s z=ᵣz)) (∉varₗ (s≺s z≺s) z≠s))) 
+--   (∈!lamₗ (∈!appₗ-l (∈!appₗ-l (∈!varₗ (s≺s z≺s) (s=ᵣs z=ᵣz)) (∉varₗ z≺s s≠z)) 
+--   (∉varₗ (s≺s z≺s) {!   !})))
 ```
 
 ## Normalisation (explicit substitution)
@@ -326,33 +326,33 @@ for proofs of linearity; we can instead implement normalisation for ULC and just
 
 mutual 
   data Lam : Set where
-    var : (n : Nat) → Lam
-    _∙_ : Lam → Lam → Lam
-    ƛ   : Lam → Lam
-    _〚_〛 : Lam → Sig → Lam -- instantiation of substitution
+    var : (n : Nat) -> Lam
+    _∙_ : Lam -> Lam -> Lam
+    ƛ   : Lam -> Lam
+    _〚_〛 : Lam -> Sig -> Lam -- instantiation of substitution
 
   data Sig : Set where 
-    _/ : Lam → Sig -- cons
-    ⇑_ : Sig → Sig -- shift
+    _/ : Lam -> Sig -- cons
+    ⇑_ : Sig -> Sig -- shift
     ↑  : Sig       -- lift
 
 -- Term to Lam
-t→l : {n : Nat} -> Term n → Lam
-t→l (varₜ k) = (var (toNat k))
-t→l (appₜ t₁ t₂) = (t→l t₁) ∙ (t→l t₂)
-t→l (lamₜ t) = ƛ (t→l t)
+t->l : {n : Nat} -> Term n -> Lam
+t->l (varₜ k) = (var (toNat k))
+t->l (appₜ t₁ t₂) = (t->l t₁) ∙ (t->l t₂)
+t->l (lamₜ t) = ƛ (t->l t)
 
 -- Lam to Term
-l→t : {n : Nat} -> Lam → Maybe (Term n)
-l→t {suc n} (var k) = just (varₜ (fromNat n))
-l→t {zero} (var k) = nothing -- there is no var with Term 0
-l→t (x ∙ y) with (l→t x) | (l→t y)
+l->t : {n : Nat} -> Lam -> Maybe (Term n)
+l->t {suc n} (var k) = just (varₜ (fromNat n))
+l->t {zero} (var k) = nothing -- there is no var with Term 0
+l->t (x ∙ y) with (l->t x) | (l->t y)
 ... | (just x) | (just y) = just (appₜ x y)
 ... | _ | _ = nothing
-l→t (ƛ x) with l→t x
+l->t (ƛ x) with l->t x
 ... | just x = just (lamₜ x)
 ... | nothing = nothing
-l→t (_ 〚 _ 〛) = nothing
+l->t (_ 〚 _ 〛) = nothing
 -- we can use with to pattern match on intermediate steps or declare a intermediary function with where
 
 -- β reduction
@@ -371,28 +371,106 @@ contractυ (var x 〚 ↑ 〛) = var x
 contractυ t = t
 
 -- distribute substitutions
-contractυ* : Nat → Lam → Lam
+contractυ* : Nat -> Lam -> Lam
 contractυ* (suc k) ((t 〚 s 〛)〚 s' 〛) = contractυ* k (contractυ* k (contractυ (t 〚 s 〛)) 〚 s' 〛)
 contractυ* (suc k) (t 〚 s 〛) = contractυ* k (contractυ (t 〚 s 〛))
-contractυ* 0 (t 〚 s 〛) = t 〚 s 〛
+contractυ* zero (t 〚 s 〛) = t 〚 s 〛
 contractυ* k (t₁ ∙ t₂) = (contractυ* k t₁) ∙ (contractυ* k t₂)
 contractυ* k (ƛ t) = ƛ (contractυ* k t)
 contractυ* _ (var k) = var k
 
 -- normalisation in Lam 
-normLam : Nat → Lam → Lam
-normLam (suc k) ((ƛ t₁) ∙ t₂) = normLam k (contractυ* (suc k) (t₁ 〚 t₂ / 〛))
-normLam k ((var i) ∙ t) = var i ∙ normLam k t
-normLam (suc k) (t₁ ∙ t₂) = normLam k ((normLam (suc k) t₁) ∙ normLam (suc k) t₂)
-normLam (suc k) (t 〚 s 〛) = normLam k (contractυ* (suc k) (t 〚 s 〛))
-normLam k (ƛ t) = ƛ (normLam k t)
-normLam k t = t
+normalise : Nat -> Lam -> Lam
+normalise (suc k) ((ƛ t₁) ∙ t₂) = normalise k (contractυ* (suc k) (t₁ 〚 t₂ / 〛))
+normalise k ((var i) ∙ t) = var i ∙ normalise k t
+normalise (suc k) (t₁ ∙ t₂) = normalise k ((normalise (suc k) t₁) ∙ normalise (suc k) t₂)
+normalise (suc k) (t 〚 s 〛) = normalise k (contractυ* (suc k) (t 〚 s 〛))
+normalise k (ƛ t) = ƛ (normalise k t)
+normalise k t = t
 
 -- normalisation in Linear
-normLinear : {n : Nat} → Nat → Linear n → Maybe (Linear n)
-normLinear {n} k t = case (l→t (normLam k (t→l (λl->λ t))))
-                         where case : Maybe (Term n) → Maybe (Linear n)
+normLinear : {n : Nat} -> Nat -> Linear n -> Maybe (Linear n)
+normLinear {n} k t = case (l->t (normalise k (t->l (λl->λ t))))
+                         where case : Maybe (Term n) -> Maybe (Linear n)
                                case nothing = nothing
                                case (just t) = λ->λl t
     
 ```
+
+## Proof of normalisation
+
+```agda
+
+open import Data.Product
+open import Data.Empty
+open import Data.Bool
+open import Data.Unit
+open import Data.Empty
+import Relation.Binary.PropositionalEquality as Eq
+open Eq
+open Eq.≡-Reasoning
+
+infix 5 _==_ 
+infix 4 _∙_
+
+-- Definitional equality
+data _==_ : Lam -> Lam -> Set where
+  β : ∀ {x y : Lam} -> (((ƛ x) ∙ y)) == (x 〚 y / 〛)
+--  η : ∀ {x y : Lam} -> (ƛ (x ∙ (var zero 〚 y / 〛))) == (x 〚 y / 〛)
+  abs==  : ∀ {x y : Lam} -> (x == y) -> (ƛ x == ƛ y)
+  app==  : ∀ {t₁ t₂ p₁ p₂ : Lam} -> (t₁ == p₁) -> (t₂ == p₂) -> ((t₁ ∙ t₂) == (p₁ ∙ p₂))
+  refl==  : ∀ {t : Lam} -> (t == t)
+  sym==   : ∀ {t₁ t₂ : Lam} -> t₁ == t₂ -> t₂ == t₁
+  trans== : ∀ {t₁ t₂ t₃ : Lam} -> t₁ == t₂ -> t₂ == t₃ -> t₁ == t₃
+  app-cong : ∀ (f : Nat -> Lam -> Lam) (n : Nat) {t₁ t₂ : Lam}
+  -- f (M N) ≡ (f M) (f N)
+    -> _==_ (f n (_∙_ (t₁) (t₂))) (_∙_ (f n t₁) (f n t₂))
+
+-- Propositional equality implies definitional equality
+≡→== : ∀ {t₁ t₂ : Lam} -> t₁ ≡ t₂ -> t₁ == t₂
+≡→== pe rewrite pe = refl==
+
+isNormal : Nat -> Lam -> Set
+isNormal n (var x) = ⊤
+isNormal n (ƛ x) with isNormal n x
+... | yup = ⊤
+isNormal (suc n) (x 〚 x₁ 〛) with isNormal n (contractυ* n (x 〚 x₁ 〛))
+... | yup = ⊤
+isNormal _ _ = ⊥ 
+
+σ-norm : Lam -> Lam -> Set
+σ-norm t nf = (nf == t) × isNormal 0 nf
+
+test1 : σ-norm (var 0) (var 0)
+test1 = (refl== , tt)
+
+-- test2 : σ-norm ((ƛ (var 0)) ∙ var 1) (var 0)
+-- test2 = ({!   !} , tt) -- requires an absurd to be proveable
+
+absurd : ⊥ -> ∀ {A : Set} -> A
+absurd () 
+
+norm-sound : ∀ (t : Lam) (gas : Nat) -> σ-norm t (normalise gas t)
+-- var always in normal form
+norm-sound (var x) zero = refl== , tt
+norm-sound (var x) (suc gas) = refl== , tt
+-- if t in normal form, λ t is in normal form
+norm-sound (ƛ t) n with norm-sound t n
+norm-sound (ƛ t) zero    | eq , isNorm  = abs== eq , tt
+norm-sound (ƛ t) (suc n) | eq , isNorm  = abs== eq , tt
+-- depends on gas to normalise further
+norm-sound (t 〚 x 〛) n with (contractυ* n (t 〚 x 〛))  
+norm-sound (t 〚 x 〛) zero    | eq = refl== , ⊥-elim ({!  !})
+norm-sound (t 〚 x 〛) (suc n) | eq = {!   !} , {!   !}
+-- i hate applications
+norm-sound (t₁ ∙ t₂) zero with isNormal zero t₁ | isNormal zero t₂
+norm-sound (t₁ ∙ t₂) zero | p | q = {!   !} , {!   !}
+norm-sound (t₁ ∙ t₂) (suc gas) = {!   !}
+
+
+```
+ 
+   
+ 
+ 
+       
