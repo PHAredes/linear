@@ -8,5 +8,4 @@ https://github.com/PierreLescanne/Lambda-R
 https://oleg.fi/gists/posts/2018-07-12-llc-in-agda.html
 http://liamoc.net/posts/2014-01-01-context-split/index.html
 
-[NbE.agda](NbE.agda) is a implementation of normalisation by evaluation with variables named
-after the Fin set. Note it is simple to write closed non-linear terms by abstracting a term containing duplicated variables. Proof stops at evaluation
+[NbE.agda](NbE.agda) is a self-contained implementation of normalisation by evaluation with variables namedafter the Fin set. Note it is simple to write closed non-linear terms by abstracting a term containing duplicated variables. Proof stops at evaluation

@@ -1,7 +1,5 @@
 module NbE where
 
-open import Data.Product
-
 infix  2  _⟶_
 infix  5  s_
 infix  6  ƛ_
@@ -137,4 +135,4 @@ normalise (suc g) L with progress L
 ...          | out-of-gas M⟶*N           =  out-of-gas (L ⟶⟨ L⟶M ⟩ M⟶*N)
 ...          | normal h M⟶*N VN          =  normal h (L ⟶⟨ L⟶M ⟩ M⟶*N) VN
 
--- I'll not adapt it as it would be time consuming and pointless
+-- I'll not adapt the rest of the proof as it would be time unreasonable
