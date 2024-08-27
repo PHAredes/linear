@@ -470,7 +470,4 @@ norm-sound (t₁ ∙ t₂) (suc gas) = {!   !}
 
 ```
  
-   
- 
- 
        
