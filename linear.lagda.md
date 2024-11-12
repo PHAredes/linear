@@ -24,7 +24,7 @@ zero =ᵣ? (suc _) = nothing
 (suc _) =ᵣ? zero = nothing
 (suc n) =ᵣ? (suc m) with (n =ᵣ? m)
 (suc n) =ᵣ? (suc m) | nothing = nothing
-(suc n) =ᵣ? (suc m) | just p = just (s=ᵣs p )
+(suc n) =ᵣ? (suc m) | just p = just (s=ᵣs p)
 
 ```
 
@@ -448,25 +448,47 @@ test1 = (refl== , tt)
 -- test2 = ({!   !} , tt) -- requires an absurd to be proveable
 
 absurd : ⊥ -> ∀ {A : Set} -> A
-absurd () 
+absurd ()
 
-norm-sound : ∀ (t : Lam) (gas : Nat) -> σ-norm t (normalise gas t)
+mutual
+  norm0lam : ∀ {t} → ƛ (normalise 0 t) ≡ ƛ t
+  norm0lam {var n} = refl
+  norm0lam {t ∙ t₁} = cong ƛ norm0app
+  norm0lam {ƛ t} = cong ƛ norm0lam
+  norm0lam {t 〚 x 〛} = refl
+  
+  norm0app : ∀ {t₁ t₂ : Lam} → normalise 0 (t₁ ∙ t₂) ≡ (t₁ ∙ t₂)
+  norm0app {var n} {var n₁} = (cong₂ _∙_ refl refl)
+  norm0app {var n} {t₂ ∙ t₃} = (cong₂ _∙_ refl norm0app)
+  norm0app {var n} {ƛ t₂} = (cong₂ _∙_ refl (norm0lam))
+  norm0app {var n} {t₂ 〚 x 〛} = (cong₂ _∙_ refl refl)
+  norm0app {t₁ ∙ t₃} {t₂} = refl
+  norm0app {ƛ t₁} {t₂} = refl
+  norm0app {t₁ 〚 x 〛} {t₂} = refl
+
+norm-eq : ∀ {t} → normalise 0 t ≡ t
+norm-eq {var n} = refl
+norm-eq {t ∙ t₁} = norm0app
+norm-eq {ƛ t} = norm0lam
+norm-eq {t 〚 x 〛} = refl
+
+norm-terminates : ∀ (t : Lam) (gas : Nat) -> σ-norm t (normalise gas t)
 -- var always in normal form
-norm-sound (var x) zero = refl== , tt
-norm-sound (var x) (suc gas) = refl== , tt
+norm-terminates (var x) zero = refl== , tt
+norm-terminates (var x) (suc gas) = refl== , tt
 -- if t in normal form, λ t is in normal form
-norm-sound (ƛ t) n with norm-sound t n
-norm-sound (ƛ t) zero    | eq , isNorm  = abs== eq , tt
-norm-sound (ƛ t) (suc n) | eq , isNorm  = abs== eq , tt
+norm-terminates (ƛ t) n with norm-terminates t n
+norm-terminates (ƛ t) zero    | eq , _  = abs== eq , tt
+norm-terminates (ƛ t) (suc n) | eq , _  = abs== eq , tt
 -- depends on gas to normalise further
-norm-sound (t 〚 x 〛) n with (contractυ* n (t 〚 x 〛))  
-norm-sound (t 〚 x 〛) zero    | eq = refl== , ⊥-elim ({!  !})
-norm-sound (t 〚 x 〛) (suc n) | eq = {!   !} , {!   !}
+norm-terminates (t 〚 x 〛) n with (contractυ* n (t 〚 x 〛))  
+norm-terminates (t 〚 x 〛) zero    | eq = refl== , {!!}
+norm-terminates (t 〚 x 〛) (suc n) | eq = {!   !} , {!   !}
 -- i hate applications
-norm-sound (t₁ ∙ t₂) zero with isNormal zero t₁ | isNormal zero t₂
-norm-sound (t₁ ∙ t₂) zero | p | q = {!   !} , {!   !}
-norm-sound (t₁ ∙ t₂) (suc gas) = {!   !}
-
+norm-terminates (t₁ ∙ t₂) zero with isNormal zero t₁ | isNormal zero t₂
+norm-terminates (t₁ ∙ t₂) zero | p | q = ≡→== norm0app  , subst (λ x → {!!}) (norm0app {t₁} {t₂}) {!!}
+norm-terminates (t₁ ∙ t₂) (suc gas) with isNormal (suc gas) t₁ | isNormal (suc gas) t₂
+... | p | q = {!!} , {!!}
 
 ```
  
